@@ -75,8 +75,8 @@ def iter_predict(Xs, Ms):
 def log(save_dir, desc):
     global best_score
     print("Logging")
-    tr_logits, tr_cost = iter_apply(trX[:n_valid], trM[:n_valid], trY[:n_valid])
-    va_logits, va_cost = iter_apply(vaX, vaM, vaY)
+    tr_logits, tr_cost = iter_apply(trX[:n_valid], trM[:n_valid], trY[:n_valid], trELMo[:n_valid])
+    va_logits, va_cost = iter_apply(vaX, vaM, vaY, vaELMo)
     tr_cost = tr_cost / len(trY[:n_valid])
     va_cost = va_cost / n_valid
     tr_acc = accuracy_score(trY[:n_valid], np.argmax(tr_logits, 1)) * 100.
