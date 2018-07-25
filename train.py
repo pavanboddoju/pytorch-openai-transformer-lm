@@ -36,20 +36,21 @@ def transform_roc(X1, X2, X3):
     return xmb, mmb
 
 
-def iter_apply(Xs, Ms, Ys):
+def iter_apply(Xs, Ms, Ys,ELMos):
     # fns = [lambda x: np.concatenate(x, 0), lambda x: float(np.sum(x))]
     logits = []
     cost = 0
     with torch.no_grad():
         dh_model.eval()
-        for xmb, mmb, ymb in iter_data(Xs, Ms, Ys, n_batch=n_batch_train, truncate=False, verbose=True):
+        for xmb, mmb, ymb, elmomb in iter_data(Xs, Ms, Ys, ELMos, n_batch=n_batch_train, truncate=False, verbose=True):
             n = len(xmb)
             XMB = torch.tensor(xmb, dtype=torch.long).to(device)
             YMB = torch.tensor(ymb, dtype=torch.long).to(device)
             MMB = torch.tensor(mmb).to(device)
+            ELMOMB = torch.tensor(elmomb).to(device)
             _, clf_logits = dh_model(XMB)
             clf_logits *= n
-            clf_losses = compute_loss_fct(XMB, YMB, MMB, clf_logits, only_return_losses=True)
+            clf_losses = compute_loss_fct(XMB, YMB, MMB, ELMOMB, clf_logits, only_return_losses=True)
             clf_losses *= n
             logits.append(clf_logits.to("cpu").numpy())
             cost += clf_losses.sum().item()
@@ -200,9 +201,9 @@ if __name__ == '__main__':
     n_vocab = len(text_encoder.encoder)
 
     print("Encoding dataset...")
-    ((trX1, trX2, trX3, trY),
-     (vaX1, vaX2, vaX3, vaY),
-     (teX1, teX2, teX3)) = encode_dataset(*rocstories(data_dir, n_valid=args.n_valid),
+    ((trX1, trX2, trX3, trY, trELMo),
+     (vaX1, vaX2, vaX3, vaY, vaELMo),
+     (teX1, teX2, teX3, teELMo)) = encode_dataset(*rocstories(data_dir, n_valid=args.n_valid),
                                           encoder=text_encoder)
     encoder['_start_'] = len(encoder)
     encoder['_delimiter_'] = len(encoder)
