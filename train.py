@@ -48,7 +48,7 @@ def iter_apply(Xs, Ms, Ys,ELMos):
             YMB = torch.tensor(ymb, dtype=torch.long).to(device)
             MMB = torch.tensor(mmb).to(device)
             ELMOMB = torch.tensor(elmomb).to(device)
-            _, clf_logits = dh_model(XMB)
+            _, clf_logits = dh_model(XMB, ELMOMB)
             clf_logits *= n
             clf_losses = compute_loss_fct(XMB, YMB, MMB, ELMOMB, clf_logits, only_return_losses=True)
             clf_losses *= n
@@ -58,15 +58,16 @@ def iter_apply(Xs, Ms, Ys,ELMos):
     return logits, cost
 
 
-def iter_predict(Xs, Ms):
+def iter_predict(Xs, Ms, ELMos):
     logits = []
     with torch.no_grad():
         dh_model.eval()
-        for xmb, mmb in iter_data(Xs, Ms, n_batch=n_batch_train, truncate=False, verbose=True):
+        for xmb, mmb, elmomb in iter_data(Xs, Ms, ELMos, n_batch=n_batch_train, truncate=False, verbose=True):
             n = len(xmb)
             XMB = torch.tensor(xmb, dtype=torch.long).to(device)
             MMB = torch.tensor(mmb).to(device)
-            _, clf_logits = dh_model(XMB)
+            ELMOMB = torch.tensor(elmomb).to(device)
+            _, clf_logits = dh_model(XMB, ELMOMB)
             logits.append(clf_logits.to("cpu").numpy())
     logits = np.concatenate(logits, 0)
     return logits
@@ -95,7 +96,7 @@ def predict(dataset, submission_dir):
     filename = filenames[dataset]
     pred_fn = pred_fns[dataset]
     label_decoder = label_decoders[dataset]
-    predictions = pred_fn(iter_predict(teX, teM))
+    predictions = pred_fn(iter_predict(teX, teM, teELMo))
     if label_decoder is not None:
         predictions = [label_decoder[prediction] for prediction in predictions]
     path = os.path.join(submission_dir, filename)
@@ -107,7 +108,7 @@ def predict(dataset, submission_dir):
 
 
 def run_epoch():
-    for xmb, mmb, ymb, elmomb in iter_data(*shuffle(trX, trM, trYt, trELMo random_state=np.random),
+    for xmb, mmb, ymb, elmomb in iter_data(*shuffle(trX, trM, trYt, trELMo, random_state=np.random),
                                    n_batch=n_batch_train, truncate=True, verbose=True):
         global n_updates
         dh_model.train()
@@ -115,7 +116,7 @@ def run_epoch():
         YMB = torch.tensor(ymb, dtype=torch.long).to(device)
         MMB = torch.tensor(mmb).to(device)
         ELMOMB = torch.tensor(elmomb).to(device)
-        lm_logits, clf_logits = dh_model(XMB)
+        lm_logits, clf_logits = dh_model(XMB, ELMOMB)
         compute_loss_fct(XMB, YMB, MMB, ELMOMB, clf_logits, lm_logits)
         n_updates += 1
         if n_updates in [1000, 2000, 4000, 8000, 16000, 32000] and n_epochs == 0:
