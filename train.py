@@ -107,15 +107,16 @@ def predict(dataset, submission_dir):
 
 
 def run_epoch():
-    for xmb, mmb, ymb in iter_data(*shuffle(trX, trM, trYt, random_state=np.random),
+    for xmb, mmb, ymb, elmomb in iter_data(*shuffle(trX, trM, trYt, trELMo random_state=np.random),
                                    n_batch=n_batch_train, truncate=True, verbose=True):
         global n_updates
         dh_model.train()
         XMB = torch.tensor(xmb, dtype=torch.long).to(device)
         YMB = torch.tensor(ymb, dtype=torch.long).to(device)
         MMB = torch.tensor(mmb).to(device)
+        ELMOMB = torch.tensor(elmomb).to(device)
         lm_logits, clf_logits = dh_model(XMB)
-        compute_loss_fct(XMB, YMB, MMB, clf_logits, lm_logits)
+        compute_loss_fct(XMB, YMB, MMB, ELMOMB, clf_logits, lm_logits)
         n_updates += 1
         if n_updates in [1000, 2000, 4000, 8000, 16000, 32000] and n_epochs == 0:
             log(save_dir, desc)

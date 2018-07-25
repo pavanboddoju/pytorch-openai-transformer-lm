@@ -9,7 +9,7 @@ class MultipleChoiceLossCompute:
         self.lm_coef = lm_coef
         self.opt = opt
 
-    def __call__(self, X, Y, M, clf_logits, lm_logits=None, only_return_losses=False):
+    def __call__(self, X, Y, M, ELMo, clf_logits, lm_logits=None, only_return_losses=False):
         # Language modeling loss
         if lm_logits is not None:
             x_shifted = X[:, :, 1:, 0].contiguous().view(-1)  # Shape: 252
