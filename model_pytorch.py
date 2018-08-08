@@ -214,12 +214,16 @@ class MultipleChoiceHead(nn.Module):
         elmo_b = ELMo[:, 0, :] + ELMo[:, 2, :]
 
         elmo_comb = np.concatenate([elmo_a, elmo_b], axis=0)
-        elmo_comb = torch.from_numpy(elmo_comb)
+        elmo_comb = torch.tensor(elmo_comb)
         elmo_comb = elmo_comb.view(-1, 2, 1024)
 
         elmo_comb, _ = torch.split(elmo_comb, 768, 2)
+        elmo_comb = elmo_comb.view(-1, 2, 768, 1)
 
-        clf_h = elmo_comb
+        elmo_comb = self.dropout(elmo_comb.transpose(1, 2)).transpose(1, 2)
+        elmo_comb = elmo_comb.contiguous().view(-1, self.n_embd)
+
+        #clf_h = elmo_comb
         
         
         # This double transposition is there to replicate the behavior
@@ -230,7 +234,7 @@ class MultipleChoiceHead(nn.Module):
         clf_h = clf_h.contiguous().view(-1, self.n_embd)
 
 
-        clf_logits = self.linear(clf_h)
+        clf_logits = self.linear(clf_h + elmo_comb)
 
         return clf_logits.view(-1, x.size(1))
 
